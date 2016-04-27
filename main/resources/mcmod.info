@@ -1,0 +1,16 @@
+[
+{
+  "modid": "gitstream",
+  "name": "Gitstream",
+  "description": "Git-based graphics development environment. Integrated with the chatbox.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Shoeboxam"],
+  "credits": "JGit!",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
