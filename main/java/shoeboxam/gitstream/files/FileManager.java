@@ -1,4 +1,4 @@
-package shoeboxam.gitstream.util;
+package shoeboxam.gitstream.files;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,10 +17,10 @@ import java.util.Map;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import shoeboxam.gitstream.settings.StampID;
-import shoeboxam.gitstream.settings.InstanceConfig;
+import shoeboxam.gitstream.settings.ConfigInstance;
 
 public class FileManager {
-	InstanceConfig config = InstanceConfig.get_data();
+	ConfigInstance config = ConfigInstance.get_data();
 
 	protected static HashMap<File, StampID> load_stamps(File stamp_location){
 		if (stamp_location.exists()){

@@ -10,9 +10,9 @@ import com.google.gson.Gson;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
-public class InstanceConfig {
+public class ConfigInstance {
 	
-	public InstanceConfig() {
+	public ConfigInstance() {
 		
 		symlink_dir.mkdirs();
 		
@@ -30,7 +30,7 @@ public class InstanceConfig {
 		}
 	}	
 	
-	private ResourcepackConfig config = get_config();
+	private ConfigResourcepack config = get_config();
 	public String name = config.name;
 	public String remote_url = config.remote_url;
 	public int scalar = config.scalar;
@@ -47,12 +47,12 @@ public class InstanceConfig {
 	public File placeholder_stamp_location = new File(workspace_directory + "\\" + "placeholder_stamps.info");
 	public File resource_stamp_location = new File(workspace_directory + "\\" + "resource_stamps.info");
 	
-	public ResourcepackConfig get_config(){
-		ResourcepackConfig config = new ResourcepackConfig();
+	public ConfigResourcepack get_config(){
+		ConfigResourcepack config = new ConfigResourcepack();
 		try {
 			 Gson json = new Gson();
 			 String json_string = IOUtils.toString(Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation("gitstream", "/config.json")).getInputStream());
-			 config = json.fromJson(json_string, ResourcepackConfig.class);
+			 config = json.fromJson(json_string, ConfigResourcepack.class);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -77,13 +77,13 @@ public class InstanceConfig {
 	    return new File(local_path);
 	}
 	
-	public static InstanceConfig get_data(){
-		InstanceConfig data;
+	public static ConfigInstance get_data(){
+		ConfigInstance data;
 		try {
 			String json_string = IOUtils.toString(new FileInputStream(homeDirectory().toString() + "\\" + "settings.json"));
-			data = new Gson().fromJson(json_string, InstanceConfig.class);
+			data = new Gson().fromJson(json_string, ConfigInstance.class);
 		} catch (IOException e) {
-			data = new InstanceConfig();
+			data = new ConfigInstance();
 		}
 		return data;
 	}

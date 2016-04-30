@@ -8,10 +8,10 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
-import shoeboxam.gitstream.settings.InstanceConfig;
-import shoeboxam.gitstream.util.EditManager;
-import shoeboxam.gitstream.util.GitManager;
-import shoeboxam.gitstream.util.ResourcePackManager;
+import shoeboxam.gitstream.GitManager;
+import shoeboxam.gitstream.files.EditManager;
+import shoeboxam.gitstream.files.ResourcePackManager;
+import shoeboxam.gitstream.settings.ConfigInstance;
 
 import java.io.File;
 import java.util.Arrays;
@@ -45,7 +45,7 @@ public class CommandUpdate implements ICommand {
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		List<String> arguments = Arrays.asList(args);
-		InstanceConfig config = new InstanceConfig();
+		ConfigInstance config = new ConfigInstance();
 		
 		if (arguments.isEmpty()){
 			
@@ -158,7 +158,7 @@ public class CommandUpdate implements ICommand {
 		return false;
 	}
 	
-	private boolean remote_get(InstanceConfig data, ICommandSender sender){
+	private boolean remote_get(ConfigInstance data, ICommandSender sender){
 		
 		boolean status = true;
 		// Get files from remote
@@ -175,7 +175,7 @@ public class CommandUpdate implements ICommand {
 		return status;
 	}
 	
-	private boolean git_to_resource(InstanceConfig data, ICommandSender sender){
+	private boolean git_to_resource(ConfigInstance data, ICommandSender sender){
 		
 		boolean status = true;
 		if (new File(data.resourcepack_directory.toString() + "\\pack.mcmeta").exists()){

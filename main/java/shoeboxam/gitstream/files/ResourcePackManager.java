@@ -1,4 +1,4 @@
-package shoeboxam.gitstream.util;
+package shoeboxam.gitstream.files;
 
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -29,7 +29,6 @@ import com.google.common.io.Files;
 
 import net.minecraft.client.Minecraft;
 import shoeboxam.gitstream.settings.StampID;
-import shoeboxam.gitstream.util.FileManager;
 
 public class ResourcePackManager extends FileManager {
 	

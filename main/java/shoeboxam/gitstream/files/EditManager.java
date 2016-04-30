@@ -1,10 +1,9 @@
-package shoeboxam.gitstream.util;
+package shoeboxam.gitstream.files;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,7 +20,7 @@ import com.google.gson.JsonSyntaxException;
 
 import shoeboxam.gitstream.settings.StampID;
 import shoeboxam.gitstream.settings.McmodInfo;
-import shoeboxam.gitstream.settings.ModDescriptor;
+import shoeboxam.gitstream.settings.ConfigMod;
 
 public class EditManager extends FileManager {
 
@@ -134,7 +133,7 @@ public class EditManager extends FileManager {
 			
 			// Create mod.json for patch file
 			for (String modid : modids_edited){
-				ModDescriptor descriptor = new ModDescriptor();
+				ConfigMod descriptor = new ConfigMod();
 				
 				String patch_name = "";
 				// Preserve mod repo patch names

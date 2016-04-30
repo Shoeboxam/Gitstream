@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 
-public class ModDescriptor {
+public class ConfigMod {
 	public String mod_id;
 	public String mod_name;
 	public String mod_dir;

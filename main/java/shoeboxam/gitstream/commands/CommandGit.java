@@ -1,7 +1,5 @@
 package shoeboxam.gitstream.commands;
 
-import shoeboxam.gitstream.util.GitManager;
-
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +10,8 @@ import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentTranslation;;
+import net.minecraft.util.text.TextComponentTranslation;
+import shoeboxam.gitstream.GitManager;;
 
 public class CommandGit implements ICommand {
 	GitManager git = GitManager.getInstance();

@@ -1,4 +1,4 @@
-package shoeboxam.gitstream.util;
+package shoeboxam.gitstream;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,22 +13,22 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import com.google.gson.Gson;
 
-import shoeboxam.gitstream.settings.GitConfig;
-import shoeboxam.gitstream.settings.InstanceConfig;
+import shoeboxam.gitstream.settings.ConfigGit;
+import shoeboxam.gitstream.settings.ConfigInstance;
 
 
 public class GitManager {
-	GitConfig config = new GitConfig();
+	ConfigGit config = new ConfigGit();
 	File git_config;
-	InstanceConfig data = new InstanceConfig();
+	ConfigInstance data = new ConfigInstance();
 	
 	private GitManager() {
-		InstanceConfig instance_config = new InstanceConfig();
+		ConfigInstance instance_config = new ConfigInstance();
 		git_config = new File(instance_config.workspace_directory.toString() + "\\" + "git_config.json");
 		
 		try {
 			String json_string = IOUtils.toString(new FileInputStream(git_config));
-			config = new Gson().fromJson(json_string, GitConfig.class);
+			config = new Gson().fromJson(json_string, ConfigGit.class);
 		} catch (IOException e) {
 		}
 	}
