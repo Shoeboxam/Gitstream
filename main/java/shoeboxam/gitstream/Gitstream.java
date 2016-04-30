@@ -4,9 +4,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+
 import shoeboxam.gitstream.commands.CommandGit;
-import shoeboxam.gitstream.commands.CommandReload;
-import shoeboxam.gitstream.commands.CommandResources;
+import shoeboxam.gitstream.commands.CommandUpdate;
 
 @Mod(modid = Gitstream.MODID, version = Gitstream.VERSION)
 public class Gitstream
@@ -22,7 +22,6 @@ public class Gitstream
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new CommandGit());
-        event.registerServerCommand(new CommandResources());
-        event.registerServerCommand(new CommandReload());
+        event.registerServerCommand(new CommandUpdate());
     }
 }

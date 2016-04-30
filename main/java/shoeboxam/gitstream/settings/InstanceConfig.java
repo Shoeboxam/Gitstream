@@ -1,6 +1,7 @@
 package shoeboxam.gitstream.settings;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
@@ -9,9 +10,10 @@ import com.google.gson.Gson;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
-public class GitstreamData {
+public class InstanceConfig {
 	
-	public GitstreamData() {
+	public InstanceConfig() {
+		
 		symlink_dir.mkdirs();
 		
 		if (!symlink){
@@ -28,23 +30,22 @@ public class GitstreamData {
 		}
 	}	
 	
-	public ResourcepackConfig config = get_config();
+	private ResourcepackConfig config = get_config();
+	public String name = config.name;
+	public String remote_url = config.remote_url;
+	public int scalar = config.scalar;
 	
 	public boolean symlink = false;
-	public File symlink_dir = new File(Minecraft.getMinecraft().mcDataDir + "\\resourcepacks\\" + config.name);
+	public File symlink_dir = new File(Minecraft.getMinecraft().mcDataDir + "\\resourcepacks\\" + name);
 	
 	public File home_directory = homeDirectory();
-	public File settings_location = new File(home_directory.toString()+ "\\" + "settings.json");
-	public File workspace_directory = new File(home_directory.toString() + "\\" + config.name);
+	public File workspace_directory = new File(home_directory.toString() + "\\" + name);
 	public File repository_directory = new File(workspace_directory.toString() + "\\" + "repository");
 	public File resourcepack_directory = new File(workspace_directory + "\\" + "resources");
 	public File modinfo_directory = new File(workspace_directory.toString() + "\\" + "modinfo");
 	
-	public boolean save_password = false;
-	public String git_username = "";
-	public String git_email = "";
-	public String git_password = "";
-
+	public File placeholder_stamp_location = new File(workspace_directory + "\\" + "placeholder_stamps.info");
+	public File resource_stamp_location = new File(workspace_directory + "\\" + "resource_stamps.info");
 	
 	public ResourcepackConfig get_config(){
 		ResourcepackConfig config = new ResourcepackConfig();
@@ -58,7 +59,7 @@ public class GitstreamData {
 		return config;
 	}
 	
-	public File homeDirectory()
+	public static File homeDirectory()
 	{
 		String local_path = "";
 	    String OS = System.getProperty("os.name").toUpperCase();
@@ -74,5 +75,16 @@ public class GitstreamData {
 	    }
 	    local_path = local_path.concat("\\.graphics_stream");
 	    return new File(local_path);
+	}
+	
+	public static InstanceConfig get_data(){
+		InstanceConfig data;
+		try {
+			String json_string = IOUtils.toString(new FileInputStream(homeDirectory().toString() + "\\" + "settings.json"));
+			data = new Gson().fromJson(json_string, InstanceConfig.class);
+		} catch (IOException e) {
+			data = new InstanceConfig();
+		}
+		return data;
 	}
 }

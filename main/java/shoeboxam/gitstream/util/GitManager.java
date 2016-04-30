@@ -1,78 +1,56 @@
-package shoeboxam.gitstream.utils;
+package shoeboxam.gitstream.util;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import com.google.gson.Gson;
 
-import shoeboxam.gitstream.settings.GitstreamData;
+import shoeboxam.gitstream.settings.GitConfig;
+import shoeboxam.gitstream.settings.InstanceConfig;
 
 
 public class GitManager {
+	GitConfig config = new GitConfig();
+	File git_config;
+	InstanceConfig data = new InstanceConfig();
 	
 	private GitManager() {
+		InstanceConfig instance_config = new InstanceConfig();
+		git_config = new File(instance_config.workspace_directory.toString() + "\\" + "git_config.json");
+		
+		try {
+			String json_string = IOUtils.toString(new FileInputStream(git_config));
+			config = new Gson().fromJson(json_string, GitConfig.class);
+		} catch (IOException e) {
+		}
 	}
 	
-	private static class GitHelperHolder { 
+	private static class GitManagerHolder { 
 	    private static final GitManager INSTANCE = new GitManager();
 	}
 
 	public static GitManager getInstance() {
-	    return GitHelperHolder.INSTANCE;
-	}
-
-	private String username = "";
-	private String password = "";
-	private String email = "";
-	CredentialsProvider creds = new UsernamePasswordCredentialsProvider(username, password);
-	
-	GitstreamData data = get_data();
-	
-	private GitstreamData get_data(){
-		
-		String local_path = "";
-	    String OS = System.getProperty("os.name").toUpperCase();
-	    if (OS.contains("WIN"))
-	        local_path = System.getenv("APPDATA");
-	    else if (OS.contains("MAC"))
-	    	local_path = System.getProperty("user.home") + "/Library/Application"
-	                + "Support";
-	    else if (OS.contains("NUX"))
-	    	local_path = System.getProperty("user.home");
-	    else{
-	    	local_path = System.getProperty("user.dir");
-	    }
-	    local_path = local_path.concat("\\.graphics_stream");
-	    
-		try {
-			String json_string = IOUtils.toString(new FileInputStream(local_path.toString() + "\\" + "settings.json"));
-			data = new Gson().fromJson(json_string, GitstreamData.class);
-		} catch (IOException e) {
-			data = new GitstreamData();
-		}
-		return data;
+	    return GitManagerHolder.INSTANCE;
 	}
 	
 	public void set_username(String username_in){
-		username = username_in;
-		creds = new UsernamePasswordCredentialsProvider(username, password);
+		config.username = username_in;
 	}
 	
 	public void set_email(String email_in){
-		username = email_in;
+		config.email = email_in;
 	}
 	
 	public void set_password(String password_in){
-		username = password_in;
-		creds = new UsernamePasswordCredentialsProvider(username, password);
+		config.password = password_in;
 	}
 	
 	public File get_repo_directory(){
@@ -83,8 +61,8 @@ public class GitManager {
 		try {
 			Git repository = Git.open(data.repository_directory);
 			
-			creds = new UsernamePasswordCredentialsProvider(data.git_username, data.git_password);
-			repository.push().setCredentialsProvider(creds).call();
+			repository.push().setCredentialsProvider(
+					new UsernamePasswordCredentialsProvider(config.username, config.password)).call();
 			return true;
 		} catch (IOException|GitAPIException e) {
 			e.printStackTrace();
@@ -93,19 +71,19 @@ public class GitManager {
 	}
 	
 	public boolean commit(String filepattern, String message){
-		try {
-			Git repository = Git.open(data.repository_directory);
-			repository.add()
-				.addFilepattern(filepattern)
-				.call();
-			repository.commit()
-				.setAuthor(new PersonIdent(username, email))
-				.setMessage(message)
-				.call();
-			repository.close();
-			return true;
-		} catch (IOException|GitAPIException e) {
-			e.printStackTrace();
+		if (has_credentials()){
+			try {
+				Git repository = Git.open(data.repository_directory);
+				repository.commit()
+					.setOnly(filepattern)
+					.setMessage(message)
+					.setAuthor(new PersonIdent(config.username, config.email))
+					.call();
+				repository.close();
+				return true;
+			} catch (IOException|GitAPIException e) {
+				e.printStackTrace();
+			}
 		}
 		return false;
 	}
@@ -115,14 +93,16 @@ public class GitManager {
 		if (data.repository_directory.exists()){
 			try {
 				Git repository = Git.open(data.repository_directory);
-				repository.pull().setCredentialsProvider(creds);
+				repository.pull().setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(config.username, config.password));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 		
 		try (Git repository = Git.cloneRepository()
-				.setCredentialsProvider(creds)
+				.setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(config.username, config.password))
                 .setURI(URL)
                 .setDirectory(data.repository_directory)
                 .call()) {
@@ -161,5 +141,19 @@ public class GitManager {
 			e.printStackTrace();
 			return "Failed to get status.";
 		}
+	}
+	
+	public boolean save_credentials(){
+		try {
+			FileUtils.writeStringToFile((git_config), new Gson().toJson(config));
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	public boolean has_credentials(){
+		return !(config.username == null || config.email == null || config.password == null);
 	}
 }
