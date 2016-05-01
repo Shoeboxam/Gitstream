@@ -161,14 +161,17 @@ public class EditManager extends FileManager {
 				
 				patchnames_edited.add(patch_name);
 				
-				Gson gson = new GsonBuilder().setPrettyPrinting().create();
+				Gson gson = new GsonBuilder()
+						.setPrettyPrinting()
+						.disableHtmlEscaping()
+						.create();
 				
 				if (mod_info_listing.containsKey(modid)){
 					
 					int i = 0;
 					for (McmodInfo mod_info : mod_info_listing.get(modid)){
 						descriptor.mod_id = mod_info.modid;
-						descriptor.mod_name = mod_info.name.replace("\u0027", "'"); //REALLY, BOP?!
+						descriptor.mod_name = mod_info.name;
 						descriptor.mod_dir = "/" + patch_name.toString() + "/";
 						descriptor.mod_version = mod_info.version;
 						descriptor.mod_authors = mod_info.authors;
