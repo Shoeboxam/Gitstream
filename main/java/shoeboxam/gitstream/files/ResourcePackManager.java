@@ -238,7 +238,11 @@ public class ResourcePackManager extends FileManager {
 		
 		update_metadata_recurse(config.resourcepack_directory, placeholder_stamps);
 
-		del_empty(config.resourcepack_directory);
+		for (File dir : config.repository_directory.listFiles()){
+			if (!dir.getName().equals(".git") && dir.isDirectory()){
+				FileManager.del_empty(dir);
+			}
+		}
 	    return true;
 	}
 

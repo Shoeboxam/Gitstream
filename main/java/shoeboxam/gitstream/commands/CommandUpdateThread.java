@@ -103,7 +103,7 @@ public class CommandUpdateThread extends Thread {
 		if (arguments.get(0).equals("clean")){
 			for (File dir : config.repository_directory.listFiles()){
 				if (!dir.getName().equals(".git") && dir.isDirectory()){
-					FileManager.del_empty(config.repository_directory);
+					FileManager.del_empty(dir);
 				}
 			}
 		}
