@@ -10,6 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import shoeboxam.gitstream.GitManager;
 import shoeboxam.gitstream.files.EditManager;
+import shoeboxam.gitstream.files.FileManager;
 import shoeboxam.gitstream.files.ResourcePackManager;
 import shoeboxam.gitstream.settings.ConfigInstance;
 
@@ -119,6 +120,14 @@ public class CommandUpdate implements ICommand {
 			resource_manager.update_metadata();
 			edited_mods.addAll(edit_manager.apply_edits());
 			sender.addChatMessage(new TextComponentTranslation("Edits transferred to clone."));
+		}
+		
+		if (arguments.get(0).equals("clean")){
+			for (File dir : config.repository_directory.listFiles()){
+				if (!dir.getName().equals(".git") && dir.isDirectory()){
+					FileManager.del_empty(config.repository_directory);
+				}
+			}
 		}
 		
 		if (arguments.get(0).equals("push") || arguments.get(0).equals("send")){

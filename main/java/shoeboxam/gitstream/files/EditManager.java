@@ -13,10 +13,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 import shoeboxam.gitstream.settings.StampID;
 import shoeboxam.gitstream.settings.McmodInfo;
@@ -166,31 +168,66 @@ public class EditManager extends FileManager {
 						.disableHtmlEscaping()
 						.create();
 				
+				// Attempt to preserve existing modinfo modid
+				String favor_modid = null;
+				File destination = new File(config.repository_directory.toString() + "\\" + patch_name + "\\" + "mod.json");
+				if (destination.exists()){
+					try {
+						FileInputStream text = new FileInputStream(destination);
+						favor_modid = gson.fromJson(IOUtils.toString(text), ConfigMod.class).mod_id;
+						text.close();
+					} catch (JsonSyntaxException | IOException e) {
+					}
+				}
+				
+				
 				if (mod_info_listing.containsKey(modid)){
 					
-					int i = 0;
-					for (McmodInfo mod_info : mod_info_listing.get(modid)){
-						descriptor.mod_id = mod_info.modid;
-						descriptor.mod_name = mod_info.name;
-						descriptor.mod_dir = "/" + patch_name.toString() + "/";
-						descriptor.mod_version = mod_info.version;
-						descriptor.mod_authors = mod_info.authors;
-						descriptor.url_website = mod_info.url;
-						descriptor.description = mod_info.description;
-						descriptor.mc_version = config.minecraft_version;
-						
-						File destination;
-						if (i == 0){
-							destination = new File(config.repository_directory.toString() + "\\" + patch_name + "\\" + "mod.json");
-						} else {
-							destination = new File(config.repository_directory.toString() + "\\" + patch_name + "\\" + "mod_" + i + ".json");
+					// Attempt to pick modinfo that aligns with current modinfo
+					boolean success = false;
+					if (favor_modid != null){
+						for (McmodInfo mod_info : mod_info_listing.get(modid)){
+							if (mod_info.modid == favor_modid){
+								
+								descriptor.mod_id = mod_info.modid;
+								descriptor.mod_name = mod_info.name;
+								descriptor.mod_dir = "/" + patch_name.toString() + "/";
+								descriptor.mod_version = mod_info.version;
+								descriptor.mod_authors = mod_info.authors;
+								descriptor.url_website = mod_info.url;
+								descriptor.description = mod_info.description;
+								descriptor.mc_version = config.minecraft_version;
+								try {
+									FileUtils.writeStringToFile((destination), gson.toJson(descriptor));
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+								success = true;
+							}
 						}
-						i++;
-						try {
-							FileUtils.writeStringToFile((destination), gson.toJson(descriptor));
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
+					}
+					// Otherwise, save all the modinfos
+					if (success == false){
+						int i = 0;
+						for (McmodInfo mod_info : mod_info_listing.get(modid)){
+							descriptor.mod_id = mod_info.modid;
+							descriptor.mod_name = mod_info.name;
+							descriptor.mod_dir = "/" + patch_name.toString() + "/";
+							descriptor.mod_version = mod_info.version;
+							descriptor.mod_authors = mod_info.authors;
+							descriptor.url_website = mod_info.url;
+							descriptor.description = mod_info.description;
+							descriptor.mc_version = config.minecraft_version;
+							
+							destination = new File(config.repository_directory.toString() + "\\" + 
+									patch_name + "\\" + "mod_" + String.valueOf(i+2) + ".json");
+							i++;
+							try {
+								FileUtils.writeStringToFile((destination), gson.toJson(descriptor));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+					}
 					}
 				}
 			}
@@ -201,7 +238,13 @@ public class EditManager extends FileManager {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-	
+			
+			//Clean up output
+			for (File dir : config.repository_directory.listFiles()){
+				if (!dir.getName().equals(".git") && dir.isDirectory()){
+					FileManager.del_empty(config.repository_directory);
+				}
+			}
 			return patchnames_edited;
 		}
 

@@ -154,14 +154,29 @@ public class FileManager {
 		return mods_installed;
 	}
 
-	protected static void del_empty(File directory) {
-		if (directory.isDirectory()){
-			File[] contents = directory.listFiles();
-			
-			for (File item : contents){
+	public static void del_empty(File directory) {
+		if (directory.isDirectory() && !directory.getName().equals(".git")){
+
+			for (File item : directory.listFiles()){
 				del_empty(item);
 			}
+			File[] contents = directory.listFiles();
 			if (contents.length == 0){
+				directory.delete();
+			}
+			
+			boolean has_graphics = false;
+			for (File item : contents){
+				if (item.getName().contains(".png")){
+					has_graphics = true;
+				}
+			}
+			if (!has_graphics){
+				for (File item : contents){
+					if (!item.getName().equals("mod.json")){
+						item.delete();
+					}
+				}
 				directory.delete();
 			}
 		}

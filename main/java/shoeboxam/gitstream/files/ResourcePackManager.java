@@ -15,6 +15,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,7 +35,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
-import scala.actors.threadpool.Arrays;
 import shoeboxam.gitstream.settings.McmodInfo;
 import shoeboxam.gitstream.settings.StampID;
 
@@ -110,6 +110,7 @@ public class ResourcePackManager extends FileManager {
 			Map<File, StampID> placeholder_stamps = load_stamps(config.placeholder_stamp_location);
 			
 			for (File modpath : jar_paths){
+				System.out.println("Preparing: " + modpath.getName());
 				if (!modpath.toString().endsWith(".jar")){
 					continue;
 				}
@@ -134,6 +135,7 @@ public class ResourcePackManager extends FileManager {
 						new File(Paths.get(extraction_dir.toString()).normalize().toString()), 
 						new File(Paths.get(staging_dir.toString()).normalize().toString()));
 				FileUtils.deleteDirectory(extraction_dir);
+
 			}
 			
 			// Update stamps
@@ -294,7 +296,6 @@ public class ResourcePackManager extends FileManager {
 				    output_stream.close();
 				    input_stream.close();
 			    } catch (FileNotFoundException e) {
-			    	e.printStackTrace();
 			    }
 			}
 			jar.close();
@@ -332,7 +333,6 @@ public class ResourcePackManager extends FileManager {
 					mod_info_array = gson.fromJson(IOUtils.toString(text), McmodInfo[].class);
 					text.close();
 				} catch (JsonSyntaxException | IOException e) {
-					e.printStackTrace();
 				}
 				
 				for (File domain : domain_directory.listFiles()){
@@ -427,7 +427,6 @@ public class ResourcePackManager extends FileManager {
 						graphics2D.dispose();
 						
 					} catch (NullPointerException | IOException e) {
-						e.printStackTrace();
 					}
 	        	}
 			}
