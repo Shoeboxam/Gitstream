@@ -151,7 +151,7 @@ public class ResourcePackManager extends FileManager {
 	        }
 	        update_metadata_recurse(config.resourcepack_directory, placeholder_stamps);
 	        del_empty(staging_dir);
-			
+			staging_dir.mkdirs();
 	        //Copy default files into resource pack
 	        try {
 				FileUtils.copyDirectory(
