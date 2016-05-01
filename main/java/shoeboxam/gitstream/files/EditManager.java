@@ -3,20 +3,20 @@ package shoeboxam.gitstream.files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 
 import shoeboxam.gitstream.settings.StampID;
 import shoeboxam.gitstream.settings.McmodInfo;
@@ -24,7 +24,19 @@ import shoeboxam.gitstream.settings.ConfigMod;
 
 public class EditManager extends FileManager {
 
+	@SuppressWarnings("unchecked")
 	public List<String> apply_edits(){
+		Map<String, List<McmodInfo>> mod_info_listing = new HashMap<String, List<McmodInfo>>();
+		
+		if (config.mcmodinfo_location.exists()){
+			try {
+				ObjectInputStream s = new ObjectInputStream(new FileInputStream(config.mcmodinfo_location));
+			    mod_info_listing = (HashMap<String, List<McmodInfo>>) s.readObject();
+			    s.close();
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+			}
+		}
 			
 			Set<String> modids_edited = new HashSet<String>();
 			List<String> patchnames_edited = new ArrayList<String>();
@@ -95,7 +107,7 @@ public class EditManager extends FileManager {
 					}
 				}
 			}
-			
+			// TODO: Fix me
 			// 2. Transfer removals
 			for (File file : resource_stamps.keySet()){
 				File relative_path = new File("\\" + file.toString().replace(config.resourcepack_directory.toString(), ""));
@@ -150,18 +162,19 @@ public class EditManager extends FileManager {
 				patchnames_edited.add(patch_name);
 				
 				Gson gson = new GsonBuilder().setPrettyPrinting().create();
-				File modinfo_location = new File(config.modinfo_directory.toString() + "\\" + modid + ".info");
-				try {
-					McmodInfo[] mod_info_array = gson.fromJson(IOUtils.toString(new FileInputStream(modinfo_location)), McmodInfo[].class);
+				
+				if (mod_info_listing.containsKey(modid)){
+					
 					int i = 0;
-					for (McmodInfo mod_info : mod_info_array){
+					for (McmodInfo mod_info : mod_info_listing.get(modid)){
 						descriptor.mod_id = mod_info.modid;
-						descriptor.mod_name = mod_info.name;
+						descriptor.mod_name = mod_info.name.replace("\u0027", "'"); //REALLY, BOP?!
 						descriptor.mod_dir = "/" + patch_name.toString() + "/";
 						descriptor.mod_version = mod_info.version;
 						descriptor.mod_authors = mod_info.authors;
 						descriptor.url_website = mod_info.url;
 						descriptor.description = mod_info.description;
+						descriptor.mc_version = config.minecraft_version;
 						
 						File destination;
 						if (i == 0){
@@ -170,11 +183,12 @@ public class EditManager extends FileManager {
 							destination = new File(config.repository_directory.toString() + "\\" + patch_name + "\\" + "mod_" + i + ".json");
 						}
 						i++;
-						FileUtils.writeStringToFile((destination), gson.toJson(descriptor));
+						try {
+							FileUtils.writeStringToFile((destination), gson.toJson(descriptor));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
 					}
-					
-				} catch (JsonSyntaxException | IOException e) {
-					e.printStackTrace();
 				}
 			}
 			

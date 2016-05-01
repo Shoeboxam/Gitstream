@@ -60,7 +60,7 @@ public class CommandGit implements ICommand {
 		}
 		
 		if (arguments.get(0).equals("commit")){
-			String message = String.join("", arguments.subList(2, arguments.size()).toString());
+			String message = StringUtils.join(arguments.subList(2, arguments.size()), " ");
 			if (git.commit(arguments.get(1), message)){
 				sender.addChatMessage(new TextComponentTranslation("Committed"));
 			} else {

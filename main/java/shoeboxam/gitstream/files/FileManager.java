@@ -161,7 +161,7 @@ public class FileManager {
 			for (File item : contents){
 				del_empty(item);
 			}
-			if (directory.listFiles() == null){
+			if (contents.length == 0){
 				directory.delete();
 			}
 		}

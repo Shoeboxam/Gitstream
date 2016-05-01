@@ -4,16 +4,19 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -24,13 +27,20 @@ import java.util.jar.JarFile;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
-import net.minecraft.client.Minecraft;
+import scala.actors.threadpool.Arrays;
+import shoeboxam.gitstream.settings.McmodInfo;
 import shoeboxam.gitstream.settings.StampID;
 
 public class ResourcePackManager extends FileManager {
+
+	Gson gson = new GsonBuilder().setPrettyPrinting().create();
 	
 	public boolean create_resource_pack(){
 		Map<File, StampID> resource_stamps = load_stamps(config.resource_stamp_location);
@@ -82,148 +92,80 @@ public class ResourcePackManager extends FileManager {
 	}
 
 	public boolean update_defaults(){
-			
-			File staging_dir_init = new File(config.workspace_directory.toString() + "\\" + "default_staging");
-			staging_dir_init.mkdirs();
-			config.modinfo_directory.mkdirs();
-			try {
-				staging_dir_init = staging_dir_init.getCanonicalFile();
-			} catch (IOException e2) {
-				e2.printStackTrace();
-			}
-			final File staging_dir = staging_dir_init;
-			
-			File[] jar_paths;
-			try {
-				jar_paths = new File(new File(Minecraft.getMinecraft().mcDataDir + "\\mods").getCanonicalPath()).listFiles();
-	
-				final Map<File, StampID> resource_stamps = load_stamps(config.resource_stamp_location);
-				Map<File, StampID> placeholder_stamps = load_stamps(config.placeholder_stamp_location);
-				
-				for (File modpath : jar_paths){
-					//Extract contents of jar:
-					try {
-						JarFile jar = new JarFile(modpath);
-						Enumeration<JarEntry> enumEntries = jar.entries();
-						while (enumEntries.hasMoreElements()) {
-						    JarEntry file = (java.util.jar.JarEntry) enumEntries.nextElement();
-						    java.io.File f = new java.io.File(staging_dir + File.separator + file.getName());
-						    if (file.isDirectory()) {
-						        f.mkdir();
-						        continue;
-						    }
-						    try {
-						    	InputStream input_stream = jar.getInputStream(file);
-							    FileOutputStream output_stream = new FileOutputStream(f);
-							    while (input_stream.available() > 0) {
-							    	output_stream.write(input_stream.read());
-							    }
-							    output_stream.close();
-							    input_stream.close();
-						    } catch (FileNotFoundException e) {
-						    	e.printStackTrace();
-						    }
-						}
-						
-						//Filter unneeded files out of extracted files:
-						final Map<File, StampID> placeholder_stamps_temp = placeholder_stamps;
-					    List<File> non_image_files = get_paths(staging_dir, new FilenameFilter() {
-					        @Override
-					        public boolean accept(File dir, String name) {
-					        	
-					        	//Delete all non graphics files
-					        	if (!name.matches("([^\\s]+(\\.(?i)(png|mcmeta|info))$)")){
-					        		return true;
-					        	}
-					        	//Delete all files that conflict with resources
-					        	File subpath = new File(dir.toString().replace(staging_dir.toString(), "") + "\\" + name);
-								
-					        	if (resource_stamps.containsKey(subpath)){
-					        		return true;
-					        	}
-					        	
-					        	//Delete all files that would overwrite an edited placeholder
-					        	File path = new File(dir.toString() + "\\" + name);
-					        	if (placeholder_stamps_temp.containsKey(subpath) && (path.lastModified() > placeholder_stamps_temp.get(subpath).timestamp || 
-					        			path.length() != placeholder_stamps_temp.get(subpath).size)){
-					        		return true;
-					        	}
-					            return false;
-					        }
-					    });
-					    
-						jar.close();
-						
-						Path modid_path = new File(staging_dir.toString() + "//assets//").listFiles()[0].toPath();
-						System.out.println(modid_path.toString());
-						String modid = modid_path.getName(modid_path.getNameCount() - 1).toString();
-						
-						Files.copy(new File(staging_dir.toString() + "\\" + "mcmod.info"), 
-								new File(config.modinfo_directory.toString() + "\\" + modid + ".info"));
-						
-						for (File file : non_image_files){
-					    	file.delete();
-					    }
-	
-					} catch (IOException e){
-						e.printStackTrace();
-						return false;
-					}
-				}
-	
-				
-				//Resize images
-				
-				staging_dir.mkdirs();
-				List<File> files = get_paths(staging_dir);
-				
-				for (File file : files){
-					if (file.toString().matches("([^\\s]+(\\.(?i)(png))$)")) {
-		        		try {
-		        			BufferedImage image = ImageIO.read(file);
-		            		int width = image.getWidth(null);
-		            		int height = image.getHeight(null);
-		            		
-		            		BufferedImage image_output = new BufferedImage(
-		            				width * config.scalar, height * config.scalar, BufferedImage.TYPE_INT_ARGB);
-		            		Graphics2D graphics2D = image_output.createGraphics();
-		            		graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-		            		graphics2D.drawImage(image, 0, 0, width * config.scalar, height * config.scalar, null);
-							ImageIO.write(image_output, "PNG", file);
-							graphics2D.dispose();
-							
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-		        	}
-					StampID info = new StampID(file.lastModified(), file.length());
-					placeholder_stamps.put(new File(file.toString().replace(staging_dir.toString(), "")), info);
-				}
-		        
-		        try {
-		        	save_stamps(config.placeholder_stamp_location, placeholder_stamps);
-		        } catch (IOException e){
-		        	e.printStackTrace();
-		        	return false;
-		        }
-		        update_metadata_recurse(config.resourcepack_directory, placeholder_stamps);
-		        del_empty(staging_dir);
-				
-		        //Copy default files into resource pack
-		        try {
-					FileUtils.copyDirectory(
-							new File(Paths.get(staging_dir.toString()).normalize().toString()), 
-							new File(Paths.get(config.resourcepack_directory.toString()).normalize().toString()));
-	//				FileUtils.deleteDirectory(staging_dir);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			
-	        return true;
+		File staging_dir = new File(config.workspace_directory.toString() + "\\" + "default_staging");
+		
+		try {
+			staging_dir = staging_dir.getCanonicalFile();
+		} catch (IOException e2) {
+			e2.printStackTrace();
 		}
+		staging_dir.mkdirs();
+		
+		File[] jar_paths;
+		try {
+			File extraction_dir = new File(config.workspace_directory.toString() + "\\" + "temp_extraction");
+			jar_paths = config.mods_directory.listFiles();
+
+			Map<File, StampID> resource_stamps = load_stamps(config.resource_stamp_location);
+			Map<File, StampID> placeholder_stamps = load_stamps(config.placeholder_stamp_location);
+			
+			for (File modpath : jar_paths){
+				if (!modpath.toString().endsWith(".jar")){
+					continue;
+				}
+				
+				if (!extract_mod(modpath, extraction_dir)){
+					continue;
+				}
+				
+				if (!update_mcmodinfo(extraction_dir)){
+					continue;
+				}
+				
+				if (!remove_conflicts(extraction_dir, resource_stamps, placeholder_stamps)){
+					continue;
+				}
+				
+				if (!resize_resources(extraction_dir)){
+					continue;
+				}
+				
+				FileUtils.copyDirectory(
+						new File(Paths.get(extraction_dir.toString()).normalize().toString()), 
+						new File(Paths.get(staging_dir.toString()).normalize().toString()));
+				FileUtils.deleteDirectory(extraction_dir);
+			}
+			
+			// Update stamps
+			for (File file : get_paths(staging_dir)){
+				StampID info = new StampID(file.lastModified(), file.length());
+				placeholder_stamps.put(new File(file.toString().replace(staging_dir.toString(), "")), info);
+			}
+	        try {
+	        	save_stamps(config.placeholder_stamp_location, placeholder_stamps);
+	        } catch (IOException e){
+	        	e.printStackTrace();
+	        	return false;
+	        }
+	        update_metadata_recurse(config.resourcepack_directory, placeholder_stamps);
+	        del_empty(staging_dir);
+			
+	        //Copy default files into resource pack
+	        try {
+				FileUtils.copyDirectory(
+						new File(Paths.get(staging_dir.toString()).normalize().toString()), 
+						new File(Paths.get(config.resourcepack_directory.toString()).normalize().toString()));
+				FileUtils.deleteDirectory(staging_dir);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		del_empty(config.resourcepack_directory);
+        return true;
+	}
 
 	public boolean update_metadata(){
 		return update_metadata_recurse(config.resourcepack_directory,load_stamps(config.placeholder_stamp_location));
@@ -293,7 +235,8 @@ public class ResourcePackManager extends FileManager {
 	    }
 		
 		update_metadata_recurse(config.resourcepack_directory, placeholder_stamps);
-		
+
+		del_empty(config.resourcepack_directory);
 	    return true;
 	}
 
@@ -308,7 +251,7 @@ public class ResourcePackManager extends FileManager {
 	    	String relative_path = file.toString().replace(config.resourcepack_directory.toString(), "");
 	        if (file.isDirectory()) {
 	            update_metadata_recurse(file, placeholder_stamps);
-	        } else if (placeholder_stamps.containsKey(new File(relative_path))) {
+	        } else if (placeholder_stamps.containsKey(new File(relative_path)) && relative_path.toString().endsWith(".png")) {
 	            filenames.add(file.toPath().getName(file.toPath().getNameCount() - 1).toString());
 	        }
 	    }
@@ -328,5 +271,167 @@ public class ResourcePackManager extends FileManager {
 		
 		return true;
 	}
+	
+	private boolean extract_mod(File modpath, File output_dir){
+		//Extract contents of jar:
+		output_dir.mkdirs();
+		try {
+			JarFile jar = new JarFile(modpath);
+			Enumeration<JarEntry> enumEntries = jar.entries();
+			while (enumEntries.hasMoreElements()) {
+			    JarEntry file = (java.util.jar.JarEntry) enumEntries.nextElement();
+			    java.io.File f = new java.io.File(output_dir + File.separator + file.getName());
+			    if (file.isDirectory()) {
+			        f.mkdir();
+			        continue;
+			    }
+			    try {
+			    	InputStream input_stream = jar.getInputStream(file);
+				    FileOutputStream output_stream = new FileOutputStream(f);
+				    while (input_stream.available() > 0) {
+				    	output_stream.write(input_stream.read());
+				    }
+				    output_stream.close();
+				    input_stream.close();
+			    } catch (FileNotFoundException e) {
+			    	e.printStackTrace();
+			    }
+			}
+			jar.close();
+			return true;
 
+		} catch (IOException e){
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private boolean update_mcmodinfo(File extraction_dir) {
+		HashMap<String, ArrayList<McmodInfo>> mod_info_listing = new HashMap<String, ArrayList<McmodInfo>>();
+		
+		if (config.mcmodinfo_location.exists()){
+			try {
+				ObjectInputStream s = new ObjectInputStream(new FileInputStream(config.mcmodinfo_location));
+			    mod_info_listing = (HashMap<String, ArrayList<McmodInfo>>) s.readObject();
+			    s.close();
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		
+		File domain_directory = new File(extraction_dir.toString() + "//assets//");
+		if (domain_directory.exists()){
+			
+			if (new File(extraction_dir.toString() + "\\mcmod.info").exists()){
+				//If mcmod and domains exist
+				McmodInfo[] mod_info_array = new McmodInfo[0];
+				try {
+					FileInputStream text = new FileInputStream(new File(extraction_dir.toString() + "\\mcmod.info"));
+					mod_info_array = gson.fromJson(IOUtils.toString(text), McmodInfo[].class);
+					text.close();
+				} catch (JsonSyntaxException | IOException e) {
+					e.printStackTrace();
+				}
+				
+				for (File domain : domain_directory.listFiles()){
+					
+					ArrayList<McmodInfo> mod_info_list = new ArrayList<McmodInfo>(Arrays.asList(mod_info_array));
+					
+					if (mod_info_listing.containsKey(domain.getName())){
+						mod_info_list.addAll(mod_info_listing.get(domain.getName()));
+					}
+					
+					mod_info_listing.put(domain.getName(), mod_info_list);
+				}
+			} else {
+				//If domains exist and mcmod.info does not exist
+				ArrayList<McmodInfo> mod_info_list = new ArrayList<McmodInfo>();
+				for (File domain : domain_directory.listFiles()){
+					McmodInfo info = new McmodInfo();
+					info.name = domain.getName();
+					info.modid = domain.getName();
+					mod_info_list.add(info);
+					mod_info_listing.put(domain.getName(), mod_info_list);
+				}
+			}
+		}
+		// else: If mod does not have domains. Not supported.
+		
+		if (!config.mcmodinfo_location.exists()){
+			config.mcmodinfo_location.getParentFile().mkdirs();
+		}
+		
+		ObjectOutputStream oos;
+		try {
+			oos = new ObjectOutputStream(new FileOutputStream(config.mcmodinfo_location));
+			oos.writeObject(mod_info_listing);
+			oos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	private boolean remove_conflicts(final File directory, final Map<File, StampID> resource_stamps, final Map<File, StampID> placeholder_stamps){
+		//Filter unneeded files out of extracted files:
+	    List<File> non_image_files = get_paths(directory, new FilenameFilter() {
+	        @Override
+	        public boolean accept(File dir, String name) {
+	        	
+	        	//Delete all non graphics files
+	        	if (!name.matches("([^\\s]+(\\.(?i)(png|mcmeta|info))$)")){
+	        		return true;
+	        	}
+	        	//Delete all files that conflict with resources
+	        	File subpath = new File(dir.toString().replace(directory.toString(), "") + "\\" + name);
+				
+	        	if (resource_stamps.containsKey(subpath)){
+	        		return true;
+	        	}
+	        	
+	        	//Delete all files that would overwrite an edited placeholder
+	        	File path = new File(dir.toString() + "\\" + name);
+	        	if (placeholder_stamps.containsKey(subpath) && (path.lastModified() > placeholder_stamps.get(subpath).timestamp || 
+	        			path.length() != placeholder_stamps.get(subpath).size)){
+	        		return true;
+	        	}
+	            return false;
+	        }
+	    });
+		
+		for (File file : non_image_files){
+	    	file.delete();
+	    }
+		return true;
+	}
+	
+	private boolean resize_resources(File directory){
+		List<File> files = get_paths(directory);
+		if (files != null){
+			for (File file : files){
+				if (file.toString().matches("([^\\s]+(\\.(?i)(png))$)")) {
+	        		try {
+	        			BufferedImage image = ImageIO.read(file);
+	            		int width = image.getWidth(null);
+	            		int height = image.getHeight(null);
+	            		
+	            		BufferedImage image_output = new BufferedImage(
+	            				width * config.scalar, height * config.scalar, BufferedImage.TYPE_INT_ARGB);
+	            		Graphics2D graphics2D = image_output.createGraphics();
+	            		graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+	            		graphics2D.drawImage(image, 0, 0, width * config.scalar, height * config.scalar, null);
+						ImageIO.write(image_output, "PNG", file);
+						graphics2D.dispose();
+						
+					} catch (NullPointerException | IOException e) {
+						e.printStackTrace();
+					}
+	        	}
+			}
+		}
+		return true;
+	}
 }

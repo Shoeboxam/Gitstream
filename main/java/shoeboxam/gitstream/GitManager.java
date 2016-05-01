@@ -24,7 +24,7 @@ public class GitManager {
 	
 	private GitManager() {
 		ConfigInstance instance_config = new ConfigInstance();
-		git_config = new File(instance_config.workspace_directory.toString() + "\\" + "git_config.json");
+		git_config = new File(instance_config.home_directory.toString() + "\\" + "git_config.json");
 		
 		try {
 			String json_string = IOUtils.toString(new FileInputStream(git_config));
@@ -74,8 +74,10 @@ public class GitManager {
 		if (has_credentials()){
 			try {
 				Git repository = Git.open(data.repository_directory);
+				repository.add()
+					.addFilepattern(filepattern)
+					.call();
 				repository.commit()
-					.setOnly(filepattern)
 					.setMessage(message)
 					.setAuthor(new PersonIdent(config.username, config.email))
 					.call();
@@ -110,7 +112,7 @@ public class GitManager {
 	        repository.close();
 	        return true;
 	        
-        } catch (GitAPIException e) {
+        } catch (GitAPIException | NullPointerException e) {
 			e.printStackTrace();
         }
 		return false;
@@ -119,7 +121,7 @@ public class GitManager {
 	public boolean pull(){
 		try {
 			Git repository = Git.open(data.repository_directory);
-			repository.pull().call().getMergeResult().getMergedCommits().toString();
+			repository.pull().call();//.getMergeResult().getMergedCommits().toString();
 			return true;
 		} catch (IOException|GitAPIException e) {
 			e.printStackTrace();

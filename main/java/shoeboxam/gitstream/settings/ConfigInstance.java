@@ -34,6 +34,7 @@ public class ConfigInstance {
 	public String name = config.name;
 	public String remote_url = config.remote_url;
 	public int scalar = config.scalar;
+	public String minecraft_version = config.minecraft_version;
 	
 	public boolean symlink = false;
 	public File symlink_dir = new File(Minecraft.getMinecraft().mcDataDir + "\\resourcepacks\\" + name);
@@ -42,10 +43,11 @@ public class ConfigInstance {
 	public File workspace_directory = new File(home_directory.toString() + "\\" + name);
 	public File repository_directory = new File(workspace_directory.toString() + "\\" + "repository");
 	public File resourcepack_directory = new File(workspace_directory + "\\" + "resources");
-	public File modinfo_directory = new File(workspace_directory.toString() + "\\" + "modinfo");
+	public File mods_directory = new File(Minecraft.getMinecraft().mcDataDir + "\\mods_1_7_10");
 	
 	public File placeholder_stamp_location = new File(workspace_directory + "\\" + "placeholder_stamps.info");
 	public File resource_stamp_location = new File(workspace_directory + "\\" + "resource_stamps.info");
+	public File mcmodinfo_location = new File(workspace_directory + "\\" + "mcmod.info");;
 	
 	public ConfigResourcepack get_config(){
 		ConfigResourcepack config = new ConfigResourcepack();

@@ -50,8 +50,14 @@ public class CommandUpdate implements ICommand {
 		if (arguments.isEmpty()){
 			
 			if (!remote_get(config, sender)){
-				sender.addChatMessage(new TextComponentTranslation("Unable to retrieve data from github. Additional information in console."));
+				if (!git.has_credentials()){
+					help(sender);
+				} else {
+					sender.addChatMessage(new TextComponentTranslation("Unable to retrieve data from Github. Additional information in console."));
+			
+				}
 			}
+			
 			if (!git_to_resource(config, sender)){
 				sender.addChatMessage(new TextComponentTranslation("Unable to transfer resources to resource pack. Additional information in console."));
 			}
@@ -70,7 +76,12 @@ public class CommandUpdate implements ICommand {
 			if (remote_get(config, sender)){
 				sender.addChatMessage(new TextComponentTranslation("Repository is ready."));
 			} else {
-				sender.addChatMessage(new TextComponentTranslation("Unable to retrieve data from github. Additional information in console."));
+				if (!git.has_credentials()){
+					help(sender);
+				} else {
+					sender.addChatMessage(new TextComponentTranslation("Unable to retrieve data from Github. Additional information in console."));
+			
+				}
 			}
 			return;
 		}
@@ -102,6 +113,14 @@ public class CommandUpdate implements ICommand {
 			return;
 		}
 		
+		if (arguments.get(0).equals("sync")){
+			// Hack to catch metadata edits in commits
+			List<String> edited_mods = edit_manager.apply_edits();
+			resource_manager.update_metadata();
+			edited_mods.addAll(edit_manager.apply_edits());
+			sender.addChatMessage(new TextComponentTranslation("Edits transferred to clone."));
+		}
+		
 		if (arguments.get(0).equals("push") || arguments.get(0).equals("send")){
 			
 			if (remote_get(config, sender)){
@@ -118,18 +137,15 @@ public class CommandUpdate implements ICommand {
 			sender.addChatMessage(new TextComponentTranslation("Edits transferred to clone."));
 
 			for (String patchname : edited_mods){
-				git.commit(patchname + "/*", "GS: " + patchname);
+				if (patchname != null){
+					git.commit(patchname, patchname);
+				}
 			}
 			
 			if (git.has_credentials()){
 				git.push();
 			} else {
-				sender.addChatMessage(new TextComponentTranslation("Please set login credentials: "));
-				sender.addChatMessage(new TextComponentTranslation("  /git config username [username]"));
-				sender.addChatMessage(new TextComponentTranslation("  /git config email [email]"));
-				sender.addChatMessage(new TextComponentTranslation("  /git config password [password]"));
-				sender.addChatMessage(new TextComponentTranslation("Optionally, save credentials with: "));
-				sender.addChatMessage(new TextComponentTranslation("  /git config save "));
+				help(sender);
 			}
 			
 			// Transfer resources
@@ -160,32 +176,34 @@ public class CommandUpdate implements ICommand {
 	
 	private boolean remote_get(ConfigInstance data, ICommandSender sender){
 		
-		boolean status = true;
 		// Get files from remote
 		if (data.repository_directory.exists()){
 			sender.addChatMessage(new TextComponentTranslation("Downloading changes from Github..."));
-			status = git.pull();
+			return git.pull();
 		} else {
 			sender.addChatMessage(new TextComponentTranslation("Downloading all resources from Github..."));
-			status = git.clone(data.remote_url);
+			return git.clone(data.remote_url);
 		}
-		if (!status) {
-			sender.addChatMessage(new TextComponentTranslation("Error downloading from Github. Additional information in console."));
-		}
-		return status;
 	}
 	
 	private boolean git_to_resource(ConfigInstance data, ICommandSender sender){
 		
-		boolean status = true;
 		if (new File(data.resourcepack_directory.toString() + "\\pack.mcmeta").exists()){
 			sender.addChatMessage(new TextComponentTranslation("Transferring changes to development pack..."));
-			status = resource_manager.update_resources();
+			return resource_manager.update_resources();
 		} else {
 			sender.addChatMessage(new TextComponentTranslation("Creating resource pack..."));
-			status = resource_manager.create_resource_pack();
+			return resource_manager.create_resource_pack();
 		}
-		return status;
+	}
+	
+	private void help(ICommandSender sender){
+		sender.addChatMessage(new TextComponentTranslation("Please set login credentials: "));
+		sender.addChatMessage(new TextComponentTranslation("  /git config username [username]"));
+		sender.addChatMessage(new TextComponentTranslation("  /git config email [email]"));
+		sender.addChatMessage(new TextComponentTranslation("  /git config password [password]"));
+		sender.addChatMessage(new TextComponentTranslation("Optionally, save credentials with: "));
+		sender.addChatMessage(new TextComponentTranslation("  /git config save "));
 	}
 
 }
