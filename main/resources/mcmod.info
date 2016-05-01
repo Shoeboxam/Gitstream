@@ -3,7 +3,7 @@
   "modid": "gitstream",
   "name": "Gitstream",
   "description": "Git-based graphics development environment. Integrated with the chatbox.",
-  "version": "0.1",
+  "version": "1.0",
   "mcversion": "1.9",
   "url": "",
   "updateUrl": "",

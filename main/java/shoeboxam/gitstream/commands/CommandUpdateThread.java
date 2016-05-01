@@ -62,6 +62,7 @@ public class CommandUpdateThread extends Thread {
 			
 				}
 			}
+			System.out.println("Git update completed.");
 			return;
 		}
 		
@@ -94,6 +95,7 @@ public class CommandUpdateThread extends Thread {
 		
 		if (arguments.get(0).equals("sync")){
 			// Hack to catch metadata edits in commits
+			System.out.println("Transferring edits to clone...");
 			List<String> edited_mods = edit_manager.apply_edits();
 			resource_manager.update_metadata();
 			edited_mods.addAll(edit_manager.apply_edits());
@@ -101,11 +103,13 @@ public class CommandUpdateThread extends Thread {
 		}
 		
 		if (arguments.get(0).equals("clean")){
+			System.out.println("Cleaning repository.");
 			for (File dir : config.repository_directory.listFiles()){
 				if (!dir.getName().equals(".git") && dir.isDirectory()){
 					FileManager.del_empty(dir);
 				}
 			}
+			System.out.println("Cleaning completed.");
 		}
 		
 		if (arguments.get(0).equals("push") || arguments.get(0).equals("send")){

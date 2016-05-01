@@ -109,7 +109,7 @@ public class EditManager extends FileManager {
 					}
 				}
 			}
-			// TODO: Fix me
+			
 			// 2. Transfer removals
 			for (File file : resource_stamps.keySet()){
 				File relative_path = new File("\\" + file.toString().replace(config.resourcepack_directory.toString(), ""));
